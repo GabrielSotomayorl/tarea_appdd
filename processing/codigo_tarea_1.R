@@ -65,10 +65,10 @@ ingresos <- ingresos %>%
   mutate(brecha_tramos = cut(brecha,c(min(brecha,na.rm=T),0,12,24,max(brecha,na.rm=T))))
 
 # Ver tabla en el viewer
-frq(ingresos$brecha_tramos,out = "viewer")
+frq(ingresos$brecha_tramos,out = "viewer",title = "Distribución de la brecha salarial de género media bruta comunal según tramos")
 
 # Guardar tabla
-frq(ingresos$brecha_tramos,out = "browser", file = "output/tables/tablarangos.html")
+frq(ingresos$brecha_tramos,out = "browser", file = "output/tables/tablarangos.html",title = "Distribución de la brecha salarial de género media bruta comunal según tramos")
 
 # Integrar código de comuna para merge con base de datos de información geográfica 
 codigo_comuna <- read_excel("input/data/original/codigo_comuna.xlsx") %>%
