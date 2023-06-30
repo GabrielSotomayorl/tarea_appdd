@@ -80,10 +80,11 @@ mapa_comunas$codigo_comunan <- as.numeric(mapa_comunas$codigo_comuna)
 datamapa <- left_join(mapa_comunas, select(ingresos, c(cod_comuna, brecha)), by = c("codigo_comunan" = "cod_comuna"))
 
 # Crear mapa
-map_plot <- ggplot(datamapa) + 
+map_plot <- ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) + 
   geom_sf(aes(fill = brecha, geometry = geometry))  +
   scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0, name = "brecha") +
   theme_minimal(base_size = 13)
 
 # Guardar mapa
-ggsave(filename="output/graphs/mapa.jpeg", plot = map_plot, device = "jpeg", width = 5000, height = 5000, units = "px")
+ggsave(filename="output/graphs/mapa.jpeg", plot = map_plot, device = "jpeg", width = 3800, height = 7000, units = "px",
+       dpi=800)
