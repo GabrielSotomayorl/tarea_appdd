@@ -10,7 +10,8 @@ library(pacman)
 pacman::p_load(tidyverse,
                readxl, 
                chilemapas,
-               sjmisc)
+               sjmisc,
+               summarytools)
 
 #Descarga de datos de ingreso
 
@@ -23,8 +24,13 @@ if (!file.exists("input/data/original/Indicadores_Ingreso_Anual_2021.xlsx")) {
   print("El archivo ya existe, no se descargará de nuevo.")
 }
 #Carga de datos a R
-ingreso<-read_excel("input/data/original/Indicadores_Ingreso_Anual_2021.xlsx", skip = 2,
-                    sheet = "1")
+ingreso<-read_excel("input/data/original/Indicadores_Ingreso_Anual_2021.xlsx", 
+                    sheet = "1",range = "A3:E3270")
+
+#Calculo de brecha nacional
+media_hombres<- as.numeric(ingreso$"2021"[ingreso$Desagregación1=="Masculino"]) 
+media_mujeres <- as.numeric(ingreso$"2021"[ingreso$Desagregación1=="Femenino"]) 
+brecha_nacional <- (media_hombres - media_mujeres) / media_hombres * 100
 
 #separar la varaible según hombres y mujeres 
 ingresoh<-ingreso %>% filter(Nivel=="comuna_sexo" & Desagregación2 =="Masculino")  %>%
@@ -38,6 +44,9 @@ ingresos<-ingresoh %>%
   mutate_at(vars(ing_prom_hombre, ing_prom_mujer), as.numeric) %>%
   mutate(brecha=(ing_prom_hombre-ing_prom_mujer)/ing_prom_hombre*100,
          comuna= tolower(iconv(comuna,to = "ASCII//TRANSLIT" )))
+
+#estadísticos descritpivos
+view(dfSummary(ingresos[,-1], headings = FALSE,method ="browser"))
 
 # Armonizar nombres de comunas
 ingresos$comuna <- case_when(
@@ -62,7 +71,9 @@ ggsave(filename="output/graphs/histograma.jpeg", plot = hist_plot, device = "jpe
 # Tabla por tramos
 # Crear variable tramos de la brecha
 ingresos <- ingresos %>%
-  mutate(brecha_tramos = cut(brecha,c(min(brecha,na.rm=T),0,12,24,max(brecha,na.rm=T))))
+  mutate(brecha_tramos = cut(brecha,c(min(brecha,na.rm=T)-0.1,0,12,24,max(brecha,na.rm=T))))
+
+ingresos[!is.na(ingresos$brecha)&is.na(ingresos$brecha_tramos),]
 
 # Ver tabla en el viewer
 frq(ingresos$brecha_tramos,out = "viewer",title = "Distribución de la brecha salarial de género media bruta comunal según tramos")
@@ -83,8 +94,12 @@ datamapa <- left_join(mapa_comunas, select(ingresos, c(cod_comuna, brecha)), by 
 map_plot <- ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) + 
   geom_sf(aes(fill = brecha, geometry = geometry))  +
   scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0, name = "brecha") +
-  theme_minimal(base_size = 13)
+  theme_minimal(base_size = 13)+
+  labs(title="Figura 1: Distribución geográfica de la brecha 
+      salarial de género comunal", caption= "Fuente: Elaboración propia a partir de registros 
+       administrativos del Ministerio de Desarrollo Social.")
 
 # Guardar mapa
 ggsave(filename="output/graphs/mapa.jpeg", plot = map_plot, device = "jpeg", width = 3800, height = 7000, units = "px",
        dpi=800)
+
