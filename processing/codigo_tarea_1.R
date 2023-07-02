@@ -11,7 +11,8 @@ pacman::p_load(tidyverse,
                readxl, 
                chilemapas,
                sjmisc,
-               summarytools)
+               summarytools,
+               htmlTable)
 
 #Descarga de datos de ingreso
 
@@ -75,11 +76,19 @@ ingresos <- ingresos %>%
 
 ingresos[!is.na(ingresos$brecha)&is.na(ingresos$brecha_tramos),]
 
-# Ver tabla en el viewer
-frq(ingresos$brecha_tramos,out = "viewer",title = "Distribución de la brecha salarial de género media bruta comunal según tramos")
+# Tabla de frencuencia por tramos
+tabla <- frq(ingresos$brecha_tramos)[[1]][-2]
+names(tabla) <- c("Valores", 
+                  "Frecuencia absoluta",
+                  "Prc %",
+                  "Prc % válido",
+                  "Prc % acumulado")
+tabla_html <- htmlTable(tabla,
+                        caption = "Distribución de la brecha salarial de género media bruta comunal según tramos",
+                        css.cell = "text-align: center;",
+                        tfoot = "Fuente: Elaboración propia a partir de registros administrativos del Ministerio de Desarrollo Social")
 
-# Guardar tabla
-frq(ingresos$brecha_tramos,out = "browser", file = "output/tables/tablarangos.html",title = "Distribución de la brecha salarial de género media bruta comunal según tramos")
+writeLines(tabla_html, "output/tables/tablarangos.html")
 
 # Integrar código de comuna para merge con base de datos de información geográfica 
 codigo_comuna <- read_excel("input/data/original/codigo_comuna.xlsx") %>%
