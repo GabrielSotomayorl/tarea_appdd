@@ -253,10 +253,41 @@ df_final <- df_final %>% group_by(provincia) %>%
 df_final <- df_final %>% group_by(region) %>% 
   mutate_all(reemplaza_mean) %>% ungroup()
 
+screenreg(list(lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+                  promedio_anios_escolaridad25_2017 + I(Poblacion_0_17_2021/Total_Poblacion_2021 * 
+                                                          100) + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
+             lm(brecha ~              `G - Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas_prop` + 
+                  `I - Actividades de alojamiento y de servicio de comidas_prop` + 
+                  `J - Información y comunicaciones_prop` + `D - Suministro de electricidad, gas, vapor y aire acondicionado_prop` + 
+                  `C - Industria manufacturera_prop` + `B - Explotación de minas y canteras_prop` + 
+                  `E - Suministro de agua; evacuación de aguas residuales, gestión de desechos y descontaminación_prop` + 
+                  `O - Administración pública y defensa; planes de seguridad social de afiliación obligatoria_prop` + 
+                  `L - Actividades inmobiliarias_prop`,data=df_final),
+             lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+                  promedio_anios_escolaridad25_2017 + I(Poblacion_0_17_2021/Total_Poblacion_2021 * 
+                                                          100) + tasa_matricula_parvularia_neta+ prop_ocup + 
+                  `G - Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas_prop` + 
+                  `I - Actividades de alojamiento y de servicio de comidas_prop` + 
+                  `J - Información y comunicaciones_prop` + `D - Suministro de electricidad, gas, vapor y aire acondicionado_prop` + 
+                  `C - Industria manufacturera_prop` + `B - Explotación de minas y canteras_prop` + 
+                  `E - Suministro de agua; evacuación de aguas residuales, gestión de desechos y descontaminación_prop` + 
+                  `O - Administración pública y defensa; planes de seguridad social de afiliación obligatoria_prop` + 
+                  `L - Actividades inmobiliarias_prop`,data=df_final)),
+        custom.coef.names = c("Intercepto","Proporción Rural", "Proporción pueblos orginarios", "Promedio años de escolaridad",
+                              "Porcentaje de NNA","Tasa de matricula parvularia","Proporción de ocupados","Prop. Comercio, reparación autos", "Prop. Alojamiento y comidas","Prop. información y comunicaciones", "Prop. Suministro de electricidad, gas, vapor y aire acondicionado", "Prop Manofactura","Prop. Minas y Canteras","Prop. Suministro de agua","Prop. Administración publica y defensa",
+                              "Prop. Actividades inmobiliarias"))
 
-
-
-screenreg(lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+reg<-htmlreg(list(lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+                    promedio_anios_escolaridad25_2017 + I(Poblacion_0_17_2021/Total_Poblacion_2021 * 
+                                                            100) + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
+               lm(brecha ~              `G - Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas_prop` + 
+                    `I - Actividades de alojamiento y de servicio de comidas_prop` + 
+                    `J - Información y comunicaciones_prop` + `D - Suministro de electricidad, gas, vapor y aire acondicionado_prop` + 
+                    `C - Industria manufacturera_prop` + `B - Explotación de minas y canteras_prop` + 
+                    `E - Suministro de agua; evacuación de aguas residuales, gestión de desechos y descontaminación_prop` + 
+                    `O - Administración pública y defensa; planes de seguridad social de afiliación obligatoria_prop` + 
+                    `L - Actividades inmobiliarias_prop`,data=df_final),
+               lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
                     promedio_anios_escolaridad25_2017 + I(Poblacion_0_17_2021/Total_Poblacion_2021 * 
                                                             100) + tasa_matricula_parvularia_neta+ prop_ocup + 
                     `G - Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas_prop` + 
@@ -265,9 +296,10 @@ screenreg(lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_c
                     `C - Industria manufacturera_prop` + `B - Explotación de minas y canteras_prop` + 
                     `E - Suministro de agua; evacuación de aguas residuales, gestión de desechos y descontaminación_prop` + 
                     `O - Administración pública y defensa; planes de seguridad social de afiliación obligatoria_prop` + 
-                    `L - Actividades inmobiliarias_prop`,data=df_final),
+                    `L - Actividades inmobiliarias_prop`,data=df_final)),
           custom.coef.names = c("Intercepto","Proporción Rural", "Proporción pueblos orginarios", "Promedio años de escolaridad",
                                 "Porcentaje de NNA","Tasa de matricula parvularia","Proporción de ocupados","Prop. Comercio, reparación autos", "Prop. Alojamiento y comidas","Prop. información y comunicaciones", "Prop. Suministro de electricidad, gas, vapor y aire acondicionado", "Prop Manofactura","Prop. Minas y Canteras","Prop. Suministro de agua","Prop. Administración publica y defensa",
                                 "Prop. Actividades inmobiliarias"))
 
-
+write_lines(reg,"output/tables/regresion.html")
+browseURL("output/tables/regresion.html")
