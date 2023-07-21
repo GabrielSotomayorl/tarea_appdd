@@ -15,7 +15,11 @@ pacman::p_load(tidyverse,
                htmlTable,
                httr,
                texreg,
-               chilemapas)
+               chilemapas,
+               knitr,
+               kableExtra,
+               gridExtra,
+               stringr)
 
 #Descarga de datos de ingreso
 
@@ -218,6 +222,8 @@ df_final <- ingresos %>%
   dplyr::left_join(poblacion_final, by = c("comuna" = "Nombre Comuna")) %>% 
   dplyr::left_join(censo17, by = c("comuna" = "com_str")) 
 
+df_final$prop_poblacion_pueblos_originarios_ley_chile_2017<-df_final$prop_poblacion_pueblos_originarios_ley_chile_2017*100
+df_final$prop_rural_2020<-df_final$prop_rural_2020*100
 
 
 #imputacion por region comuna 
@@ -252,59 +258,44 @@ df_final <- df_final %>% group_by(provincia) %>%
 ###--- Imputación por región ---###
 
 df_final <- df_final %>% group_by(region) %>% 
-  mutate_all(reemplaza_mean) %>% ungroup()
+  mutate_all(reemplaza_mean) %>% ungroup() %>% 
+  janitor::clean_names()
 
-screenreg(list(lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
-                  promedio_anios_escolaridad25_2017 + I(Poblacion_0_17_2021/Total_Poblacion_2021 * 
-                                                          100) + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
-             lm(brecha ~              `G - Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas_prop` + 
-                  `I - Actividades de alojamiento y de servicio de comidas_prop` + 
-                  `J - Información y comunicaciones_prop` + `D - Suministro de electricidad, gas, vapor y aire acondicionado_prop` + 
-                  `C - Industria manufacturera_prop` + `B - Explotación de minas y canteras_prop` + 
-                  `E - Suministro de agua; evacuación de aguas residuales, gestión de desechos y descontaminación_prop` + 
-                  `O - Administración pública y defensa; planes de seguridad social de afiliación obligatoria_prop` + 
-                  `L - Actividades inmobiliarias_prop`,data=df_final),
-             lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
-                  promedio_anios_escolaridad25_2017 + I(Poblacion_0_17_2021/Total_Poblacion_2021 * 
-                                                          100) + tasa_matricula_parvularia_neta+ prop_ocup + 
-                  `G - Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas_prop` + 
-                  `I - Actividades de alojamiento y de servicio de comidas_prop` + 
-                  `J - Información y comunicaciones_prop` + `D - Suministro de electricidad, gas, vapor y aire acondicionado_prop` + 
-                  `C - Industria manufacturera_prop` + `B - Explotación de minas y canteras_prop` + 
-                  `E - Suministro de agua; evacuación de aguas residuales, gestión de desechos y descontaminación_prop` + 
-                  `O - Administración pública y defensa; planes de seguridad social de afiliación obligatoria_prop` + 
-                  `L - Actividades inmobiliarias_prop`,data=df_final)),
-        custom.coef.names = c("Intercepto","Proporción Rural", "Proporción pueblos orginarios", "Promedio años de escolaridad",
-                              "Porcentaje de NNA","Tasa de matricula parvularia","Proporción de ocupados","Prop. Comercio, reparación autos", "Prop. Alojamiento y comidas","Prop. información y comunicaciones", "Prop. Suministro de electricidad, gas, vapor y aire acondicionado", "Prop Manofactura","Prop. Minas y Canteras","Prop. Suministro de agua","Prop. Administración publica y defensa",
-                              "Prop. Actividades inmobiliarias"))
+#Regresión lineal múltiple-----------------------------
 
-reg<-htmlreg(list(lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
-                    promedio_anios_escolaridad25_2017 + I(Poblacion_0_17_2021/Total_Poblacion_2021 * 
-                                                            100) + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
-               lm(brecha ~              `G - Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas_prop` + 
-                    `I - Actividades de alojamiento y de servicio de comidas_prop` + 
-                    `J - Información y comunicaciones_prop` + `D - Suministro de electricidad, gas, vapor y aire acondicionado_prop` + 
-                    `C - Industria manufacturera_prop` + `B - Explotación de minas y canteras_prop` + 
-                    `E - Suministro de agua; evacuación de aguas residuales, gestión de desechos y descontaminación_prop` + 
-                    `O - Administración pública y defensa; planes de seguridad social de afiliación obligatoria_prop` + 
-                    `L - Actividades inmobiliarias_prop`,data=df_final),
-               lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
-                    promedio_anios_escolaridad25_2017 + I(Poblacion_0_17_2021/Total_Poblacion_2021 * 
-                                                            100) + tasa_matricula_parvularia_neta+ prop_ocup + 
-                    `G - Comercio al por mayor y al por menor; reparación de vehículos automotores y motocicletas_prop` + 
-                    `I - Actividades de alojamiento y de servicio de comidas_prop` + 
-                    `J - Información y comunicaciones_prop` + `D - Suministro de electricidad, gas, vapor y aire acondicionado_prop` + 
-                    `C - Industria manufacturera_prop` + `B - Explotación de minas y canteras_prop` + 
-                    `E - Suministro de agua; evacuación de aguas residuales, gestión de desechos y descontaminación_prop` + 
-                    `O - Administración pública y defensa; planes de seguridad social de afiliación obligatoria_prop` + 
-                    `L - Actividades inmobiliarias_prop`,data=df_final)),
-          custom.coef.names = c("Intercepto","Proporción Rural", "Proporción pueblos orginarios", "Promedio años de escolaridad",
-                                "Porcentaje de NNA","Tasa de matricula parvularia","Proporción de ocupados","Prop. Comercio, reparación autos", "Prop. Alojamiento y comidas","Prop. información y comunicaciones", "Prop. Suministro de electricidad, gas, vapor y aire acondicionado", "Prop Manofactura","Prop. Minas y Canteras","Prop. Suministro de agua","Prop. Administración publica y defensa",
-                                "Prop. Actividades inmobiliarias"))
+models <- list(
+  lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+       promedio_anios_escolaridad25_2017 + I(poblacion_0_17_2021/total_poblacion_2021 * 
+                                               100) + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
+  lm(brecha ~ g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
+       i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
+       j_informacion_y_comunicaciones_prop + d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
+       c_industria_manufacturera_prop + b_explotacion_de_minas_y_canteras_prop + 
+       e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
+       o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop + 
+       l_actividades_inmobiliarias_prop ,data=df_final),
+  lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+       promedio_anios_escolaridad25_2017 + I(poblacion_0_17_2021/total_poblacion_2021 * 
+                                               100) + tasa_matricula_parvularia_neta+ prop_ocup + 
+       g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
+       i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
+       j_informacion_y_comunicaciones_prop + d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
+       c_industria_manufacturera_prop + b_explotacion_de_minas_y_canteras_prop + 
+       e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
+       o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop + 
+       l_actividades_inmobiliarias_prop ,data=df_final)
+)
+
+coefnames<-c("Intercepto","Proporción Rural", "Proporción pueblos orginarios", "Promedio años de escolaridad",
+             "Porcentaje de NNA","Tasa de matricula parvularia","Proporción de ocupados","Prop. Comercio, reparación autos", "Prop. Alojamiento y comidas","Prop. información y comunicaciones", "Prop. Suministro de electricidad, gas, vapor y aire acondicionado", "Prop Manofactura","Prop. Minas y Canteras","Prop. Suministro de agua","Prop. Administración publica y defensa",
+             "Prop. Actividades inmobiliarias")
+
+screenreg(models, custom.coef.names = coefnames)
+
+reg<-htmlreg(models,custom.coef.names = coefnames)
 
 write_lines(reg,"output/tables/regresion.html")
 browseURL("output/tables/regresion.html")
-
 
 # mapa ----------------
 
@@ -316,7 +307,8 @@ df_finalm <- left_join(codigo_comuna,df_final,by="comuna")
 
 # Unir datos de brecha con información geográfica del paquete chile_mapas
 mapa_comunas$codigo_comunan <- as.numeric(mapa_comunas$codigo_comuna) 
-datamapa <- left_join(mapa_comunas, select(df_finalm, c(comuna,cod_comuna, brecha)), by = c("codigo_comunan" = "cod_comuna"))
+datamapa <- left_join(mapa_comunas, select(df_finalm, c(comuna,cod_comuna,residuals, brecha,`B - Explotación de minas y canteras_prop`)), by = c("codigo_comunan" = "cod_comuna"))
+
 
 # Crear mapa
 map_plot <- ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) + 
@@ -331,32 +323,124 @@ map_plot <- ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) +
 ggsave(filename="output/graphs/mapa.jpeg", plot = map_plot, device = "jpeg", width = 3800, height = 7000, units = "px",
        dpi=800)
 
-# install.packages("plotly")
-# library(plotly)
-# ggplotly(map_plot)
 
-install.packages("ggiraph")
-library(ggiraph)
+# Tabla de descriptivos-------------
 
-datamapa$comunab<- paste(datamapa$comuna, " ",round(datamapa$brecha,1),"%",sep ="")
-# Crear mapa
-map_plot<-ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) + 
-  geom_sf_interactive(aes(fill = brecha, geometry = geometry, 
-                          data_id = codigo_comuna, tooltip = comunab))  +
-  scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0, name = "brecha") +
-  theme_minimal(base_size = 13)+
-  labs(title="Figura 1: Distribución geográfica de la brecha 
-      salarial de género comunal", caption= "Fuente: Elaboración propia a partir de registros 
-       administrativos del Ministerio de Desarrollo Social.")
-
-# Convertir a un gráfico interactivo con ggiraph
-interactive_map_plot <- girafe(code = print(map_plot))
-
-# Ver el gráfico interactivo
-print(interactive_map_plot)
+#estadísticos descritpivos
+summary <- dfSummary(df_final[,c("ing_prom_hombre","ing_prom_mujer","brecha")], headings = FALSE)
+summary_html <- print(summary, method = "render", omit.headings = TRUE, omit.style = TRUE, omit.body = FALSE)
 
 
 
+writeLines(summary_html$children[[2]][[1]], "output/tables/vardep.html")
+# Crear la carpeta 'output' si no 
+
+# Tabla por tramos----------------------
+# Crear variable tramos de la brecha
+df_final <- df_final  %>%
+  mutate(brecha_tramos = cut(brecha,c(min(brecha,na.rm=T)-0.1,0,12,24,max(brecha,na.rm=T))))
+
+# Tabla de frencuencia por tramos
+tabla <- frq(df_final$brecha_tramos)[[1]][-2]
+names(tabla) <- c("Valores", 
+                  "Frecuencia absoluta",
+                  "Prc %",
+                  "Prc % válido",
+                  "Prc % acumulado")
+tabla_html <- htmlTable(tabla,
+                        caption = "Distribución de la brecha salarial de género media bruta comunal según tramos",
+                        css.cell = "text-align: center;",
+                        tfoot = "Fuente: Elaboración propia a partir de registros administrativos del Ministerio de Desarrollo Social")
+
+writeLines(tabla_html, "output/tables/tablarangos.html")
+
+# descritivos de las variables del modelo ---------------
+
+df_model <- df_final[,c("brecha","prop_rural_2020","prop_poblacion_pueblos_originarios_ley_chile_2017","promedio_anios_escolaridad25_2017","poblacion_0_17_2021","total_poblacion_2021",
+                        "tasa_matricula_parvularia_neta","prop_ocup","g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop","i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop",
+                        "j_informacion_y_comunicaciones_prop","d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop","c_industria_manufacturera_prop","b_explotacion_de_minas_y_canteras_prop",
+                        "e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop","o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop",
+                        "l_actividades_inmobiliarias_prop")]
 
 
+# Cálculo de la media y la desviación estándar
+means <- sapply(df_model, mean, na.rm = TRUE)
+sds <- sapply(df_model, sd, na.rm = TRUE)
+mins <- sapply(df_model, min, na.rm = TRUE)
+maxs <- sapply(df_model, max, na.rm = TRUE)
 
+# Convertir los resultados en un dataframe
+df_summary <- data.frame(
+  Variable = names(df_model),
+  Mean = means,
+  SD = sds,
+  Min = mins,
+  Max = maxs
+)
+
+df_summary$Variable <- c("Brecha salarial",
+                         "Proporción Rural 2020",
+                         "Proporción de pueblos originarios Ley Chile 2017",
+                         "Promedio de años de escolaridad 2017",
+                         "Población 0-17 2021",
+                         "Total de Población 2021",
+                         "Tasa de matrícula parvularia neta",
+                         "Proporción de ocupados/as formales sobre la población comunal",
+                         "Proporción de comercio al por mayor y menor, reparación de vehículos automotores y motocicletas",
+                         "Proporción de actividades de alojamiento y de servicio de comidas",
+                         "Proporción de información y comunicaciones",
+                         "Proporción de suministro de electricidad, gas, vapor y aire acondicionado",
+                         "Proporción de industria manufacturera",
+                         "Proporción de explotación de minas y canteras",
+                         "Proporción de suministro de agua, evacuación de aguas residuales, gestión de desechos y descontaminación",
+                         "Proporción de administración pública y defensa, planes de seguridad social de afiliación obligatoria",
+                         "Proporción de actividades inmobiliarias")
+
+# Utilizar el paquete kable de knitr para convertir el dataframe en una tabla HTML
+tab_desc<-kable(df_summary, format = "html", row.names = FALSE, digits = 2) %>%
+  kable_styling(full_width = F)
+
+writeLines(tab_desc,"output/tables/descriptivos_regresión.html")
+
+# Variables en el modelo
+variables <- c("prop_rural_2020", "prop_poblacion_pueblos_originarios_ley_chile_2017", "promedio_anios_escolaridad25_2017",
+               "poblacion_0_17_2021", "total_poblacion_2021", "tasa_matricula_parvularia_neta", "prop_ocup", 
+               "g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop", 
+               "i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop", "j_informacion_y_comunicaciones_prop",
+               "d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop", "c_industria_manufacturera_prop",
+               "b_explotacion_de_minas_y_canteras_prop", "e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop", 
+               "o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop", 
+               "l_actividades_inmobiliarias_prop")
+
+xlabs<-c("prop_rural_2020", "prop_pueblos_originarios", "promedio_anios_escolaridad",
+         "poblacion_0_17_2021", "total_poblacion_2021", "tasa_matricula_parvularia_neta", "prop_ocup", 
+         "g_comercio_prop", 
+         "i_alojamiento_y_comidas_prop", "j_informacion_y_com_prop",
+         "d_electricidad_gas_prop", "c_industria_manufacturera_prop",
+         "b_explotacion_de_minas_prop", "e_suministro_de_agua_prop", 
+         "o_adm_publica_y_defensa_prop", 
+         "l_actividades_inmobiliarias_prop")
+
+# Crear una lista para almacenar los gráficos
+plots <- list()
+
+# Bucle for para crear scatterplots
+# Bucle for para crear scatterplots
+for (i in seq_along(variables)) {
+  
+  # Subset de los datos para excluir NA's
+  df_sub <- na.omit(df_final[,c(variables[i], 'brecha')])
+  
+  r <- cor(df_sub[[1]], df_sub$brecha)  # Calcula el coeficiente de correlación
+  r_label <- paste("r =", round(r, 2))  # Crea una etiqueta para 'r'
+  
+  plots[[i]] <- ggplot(df_sub, aes_string(x = variables[i], y = 'brecha')) + 
+    geom_point(alpha = 0.6, color = 'darkblue') +
+    geom_smooth(method = lm, se = FALSE, color = 'red') +
+    theme_minimal() +
+    labs(x = paste(xlabs[i],r_label),  # Divide las etiquetas en dos líneas
+         y = "Brecha salarial")
+}
+
+# Crear un grid de gráficos
+gridExtra::grid.arrange(grobs = plots, ncol = 4)  # Ajusta el número de columnas según tus necesidades
