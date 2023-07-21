@@ -14,7 +14,8 @@ pacman::p_load(tidyverse,
                summarytools,
                htmlTable,
                httr,
-               texreg)
+               texreg,
+               chilemapas)
 
 #Descarga de datos de ingreso
 
@@ -303,3 +304,59 @@ reg<-htmlreg(list(lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originari
 
 write_lines(reg,"output/tables/regresion.html")
 browseURL("output/tables/regresion.html")
+
+
+# mapa ----------------
+
+
+# Integrar código de comuna para merge con base de datos de información geográfica 
+codigo_comuna <- read_excel("input/data/original/codigo_comuna.xlsx") %>%
+  mutate(comuna= tolower(iconv(comuna,to = "ASCII//TRANSLIT" )))
+df_finalm <- left_join(codigo_comuna,df_final,by="comuna")
+
+# Unir datos de brecha con información geográfica del paquete chile_mapas
+mapa_comunas$codigo_comunan <- as.numeric(mapa_comunas$codigo_comuna) 
+datamapa <- left_join(mapa_comunas, select(df_finalm, c(comuna,cod_comuna, brecha)), by = c("codigo_comunan" = "cod_comuna"))
+
+# Crear mapa
+map_plot <- ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) + 
+  geom_sf(aes(fill = brecha, geometry = geometry))  +
+  scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0, name = "brecha") +
+  theme_minimal(base_size = 13)+
+  labs(title="Figura 1: Distribución geográfica de la brecha 
+      salarial de género comunal", caption= "Fuente: Elaboración propia a partir de registros 
+       administrativos del Ministerio de Desarrollo Social.")
+
+# Guardar mapa
+ggsave(filename="output/graphs/mapa.jpeg", plot = map_plot, device = "jpeg", width = 3800, height = 7000, units = "px",
+       dpi=800)
+
+# install.packages("plotly")
+# library(plotly)
+# ggplotly(map_plot)
+
+install.packages("ggiraph")
+library(ggiraph)
+
+datamapa$comunab<- paste(datamapa$comuna, " ",round(datamapa$brecha,1),"%",sep ="")
+# Crear mapa
+map_plot<-ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) + 
+  geom_sf_interactive(aes(fill = brecha, geometry = geometry, 
+                          data_id = codigo_comuna, tooltip = comunab))  +
+  scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0, name = "brecha") +
+  theme_minimal(base_size = 13)+
+  labs(title="Figura 1: Distribución geográfica de la brecha 
+      salarial de género comunal", caption= "Fuente: Elaboración propia a partir de registros 
+       administrativos del Ministerio de Desarrollo Social.")
+
+# Convertir a un gráfico interactivo con ggiraph
+interactive_map_plot <- girafe(code = print(map_plot))
+
+# Ver el gráfico interactivo
+print(interactive_map_plot)
+
+
+
+
+
+
