@@ -307,7 +307,7 @@ df_finalm <- left_join(codigo_comuna,df_final,by="comuna")
 
 # Unir datos de brecha con información geográfica del paquete chile_mapas
 mapa_comunas$codigo_comunan <- as.numeric(mapa_comunas$codigo_comuna) 
-datamapa <- left_join(mapa_comunas, select(df_finalm, c(comuna,cod_comuna,residuals, brecha,`B - Explotación de minas y canteras_prop`)), by = c("codigo_comunan" = "cod_comuna"))
+datamapa <- left_join(mapa_comunas, select(df_finalm, c(comuna,cod_comuna, brecha)), by = c("codigo_comunan" = "cod_comuna"))
 
 
 # Crear mapa
@@ -443,4 +443,9 @@ for (i in seq_along(variables)) {
 }
 
 # Crear un grid de gráficos
-gridExtra::grid.arrange(grobs = plots, ncol = 4)  # Ajusta el número de columnas según tus necesidades
+cor_plot<-gridExtra::grid.arrange(grobs = plots, ncol = 4)
+
+# Guardar mapa
+ggsave(filename="output/graphs/cor.jpeg", plot = cor_plot, device = "jpeg", width = 8000, height =7000 , units = "px",
+       dpi=800)
+
