@@ -80,7 +80,7 @@ poblacion_0_17_2021 <- poblacion %>%
 
 # Unir las dos tablas para tener una sola base de datos por comuna
 poblacion_final <- merge(poblacion_total_2021, poblacion_0_17_2021, by = c("Comuna", "Nombre Comuna"))
-
+poblacion_final$propnna<-poblacion_final$Poblacion_0_17_2021/poblacion_final$Total_Poblacion_2021*100
 
 #Educacion
 if (!file.exists("input/data/original/Indicadores_Educacion_Anual_2021.xlsx")) {
@@ -250,6 +250,7 @@ reemplaza_mean <- function(x){
   return(x)
 }
 
+summary(df_final)
 ###--- Imputación por provincia ---###
 
 df_final <- df_final %>% group_by(provincia) %>% 
@@ -261,12 +262,43 @@ df_final <- df_final %>% group_by(region) %>%
   mutate_all(reemplaza_mean) %>% ungroup() %>% 
   janitor::clean_names()
 
+
+library(corrplot)
+
+vars<-df_final[,c("brecha","prop_rural_2020","prop_poblacion_pueblos_originarios_ley_chile_2017","promedio_anios_escolaridad25_2017","propnna",
+                  "tasa_matricula_parvularia_neta","prop_ocup","g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop","i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop",
+                  "j_informacion_y_comunicaciones_prop","d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop","c_industria_manufacturera_prop","b_explotacion_de_minas_y_canteras_prop",
+                  "e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop","o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop",
+                  "l_actividades_inmobiliarias_prop")]
+colnames(vars)<- c("brecha","prop_rural_2020", "prop_pueblos_originarios", "promedio_anios_escolaridad",
+                          "Proporcion NNA", "tasa_matricula_parvularia_neta", "prop_ocup", 
+                          "g_comercio_prop", 
+                          "i_alojamiento_y_comidas_prop", "j_informacion_y_com_prop",
+                          "d_electricidad_gas_prop", "c_industria_manufacturera_prop",
+                          "b_explotacion_de_minas_prop", "e_suministro_de_agua_prop", 
+                          "o_adm_publica_y_defensa_prop", 
+                          "l_actividades_inmobiliarias_prop")
+
+corre<-cor(vars)
+corrplot(corre, method = "number")
+
+
+library(PerformanceAnalytics)
+chart.Correlation(vars, histogram = TRUE)
+
+# Fig.5
+corrplot(corre,
+         method = "circle",
+         type = "upper",
+         order = "hclust",
+         tl.col = "black",
+         tl.srt = 45,
+         tl.cex = 0.6)
 #Regresión lineal múltiple-----------------------------
 
 models <- list(
   lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
-       promedio_anios_escolaridad25_2017 + I(poblacion_0_17_2021/total_poblacion_2021 * 
-                                               100) + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
+       promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
   lm(brecha ~ g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
        i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
        j_informacion_y_comunicaciones_prop + d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
@@ -275,8 +307,7 @@ models <- list(
        o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop + 
        l_actividades_inmobiliarias_prop ,data=df_final),
   lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
-       promedio_anios_escolaridad25_2017 + I(poblacion_0_17_2021/total_poblacion_2021 * 
-                                               100) + tasa_matricula_parvularia_neta+ prop_ocup + 
+       promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup + 
        g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
        i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
        j_informacion_y_comunicaciones_prop + d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
@@ -292,7 +323,7 @@ coefnames<-c("Intercepto","Proporción Rural", "Proporción pueblos orginarios",
 
 screenreg(models, custom.coef.names = coefnames)
 
-reg<-htmlreg(models,custom.coef.names = coefnames)
+reg<-htmlreg(models,custom.coef.names = coefnames, single.row = T)
 
 write_lines(reg,"output/tables/regresion.html")
 browseURL("output/tables/regresion.html")
@@ -356,7 +387,7 @@ writeLines(tabla_html, "output/tables/tablarangos.html")
 
 # descritivos de las variables del modelo ---------------
 
-df_model <- df_final[,c("brecha","prop_rural_2020","prop_poblacion_pueblos_originarios_ley_chile_2017","promedio_anios_escolaridad25_2017","poblacion_0_17_2021","total_poblacion_2021",
+df_model <- df_final[,c("brecha","prop_rural_2020","prop_poblacion_pueblos_originarios_ley_chile_2017","promedio_anios_escolaridad25_2017","propnna",
                         "tasa_matricula_parvularia_neta","prop_ocup","g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop","i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop",
                         "j_informacion_y_comunicaciones_prop","d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop","c_industria_manufacturera_prop","b_explotacion_de_minas_y_canteras_prop",
                         "e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop","o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop",
@@ -382,8 +413,7 @@ df_summary$Variable <- c("Brecha salarial",
                          "Proporción Rural 2020",
                          "Proporción de pueblos originarios Ley Chile 2017",
                          "Promedio de años de escolaridad 2017",
-                         "Población 0-17 2021",
-                         "Total de Población 2021",
+                         "Proporción de NNA",
                          "Tasa de matrícula parvularia neta",
                          "Proporción de ocupados/as formales sobre la población comunal",
                          "Proporción de comercio al por mayor y menor, reparación de vehículos automotores y motocicletas",
@@ -404,7 +434,7 @@ writeLines(tab_desc,"output/tables/descriptivos_regresión.html")
 
 # Variables en el modelo
 variables <- c("prop_rural_2020", "prop_poblacion_pueblos_originarios_ley_chile_2017", "promedio_anios_escolaridad25_2017",
-               "poblacion_0_17_2021", "total_poblacion_2021", "tasa_matricula_parvularia_neta", "prop_ocup", 
+               "propnna", "tasa_matricula_parvularia_neta", "prop_ocup", 
                "g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop", 
                "i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop", "j_informacion_y_comunicaciones_prop",
                "d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop", "c_industria_manufacturera_prop",
@@ -413,7 +443,7 @@ variables <- c("prop_rural_2020", "prop_poblacion_pueblos_originarios_ley_chile_
                "l_actividades_inmobiliarias_prop")
 
 xlabs<-c("prop_rural_2020", "prop_pueblos_originarios", "promedio_anios_escolaridad",
-         "poblacion_0_17_2021", "total_poblacion_2021", "tasa_matricula_parvularia_neta", "prop_ocup", 
+         "proporción NNA", "tasa_matricula_parvularia_neta", "prop_ocup", 
          "g_comercio_prop", 
          "i_alojamiento_y_comidas_prop", "j_informacion_y_com_prop",
          "d_electricidad_gas_prop", "c_industria_manufacturera_prop",
@@ -446,6 +476,6 @@ for (i in seq_along(variables)) {
 cor_plot<-gridExtra::grid.arrange(grobs = plots, ncol = 4)
 
 # Guardar mapa
-ggsave(filename="output/graphs/cor.jpeg", plot = cor_plot, device = "jpeg", width = 8000, height =7000 , units = "px",
+ggsave(filename="output/graphs/cor.jpeg", plot = cor_plot, device = "jpeg", width = 10000, height =7000 , units = "px",
        dpi=800)
 
