@@ -299,27 +299,46 @@ corrplot(corre,
 models <- list(
   lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
        promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
-  lm(brecha ~ g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
-       i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
-       j_informacion_y_comunicaciones_prop + d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
-       c_industria_manufacturera_prop + b_explotacion_de_minas_y_canteras_prop + 
-       e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
-       o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop + 
-       l_actividades_inmobiliarias_prop ,data=df_final),
-  lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
-       promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup + 
+  lm(brecha ~        e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
+       o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop +
+       d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
+       b_explotacion_de_minas_y_canteras_prop + 
        g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
        i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
-       j_informacion_y_comunicaciones_prop + d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
-       c_industria_manufacturera_prop + b_explotacion_de_minas_y_canteras_prop + 
+       l_actividades_inmobiliarias_prop +
+       c_industria_manufacturera_prop + 
+       j_informacion_y_comunicaciones_prop ,data=df_final),
+  lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+       promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup + 
        e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
-       o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop + 
-       l_actividades_inmobiliarias_prop ,data=df_final)
+       o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop +
+       d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
+       b_explotacion_de_minas_y_canteras_prop + 
+       g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
+       i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
+       l_actividades_inmobiliarias_prop +
+       c_industria_manufacturera_prop + 
+       j_informacion_y_comunicaciones_prop ,data=df_final) 
+  
 )
 
+
+
+
+
 coefnames<-c("Intercepto","Proporción Rural", "Proporción pueblos orginarios", "Promedio años de escolaridad",
-             "Porcentaje de NNA","Tasa de matricula parvularia","Proporción de ocupados","Prop. Comercio, reparación autos", "Prop. Alojamiento y comidas","Prop. información y comunicaciones", "Prop. Suministro de electricidad, gas, vapor y aire acondicionado", "Prop Manofactura","Prop. Minas y Canteras","Prop. Suministro de agua","Prop. Administración publica y defensa",
-             "Prop. Actividades inmobiliarias")
+             "Porcentaje de NNA","Tasa de matricula parvularia","Proporción de ocupados",
+             "Prop. Suministro de agua",
+             "Prop. Administración publica y defensa",
+             "Prop. Suministro de electricidad, gas, vapor y aire acondicionado",
+             "Prop. Minas y Canteras",
+             "Prop. Comercio, reparación autos",
+             "Prop. Alojamiento y comidas",
+             "Prop. Actividades inmobiliarias",
+             "Prop Manofactura",
+             "Prop. información y comunicaciones"
+             
+            )
 
 screenreg(models, custom.coef.names = coefnames)
 
