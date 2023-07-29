@@ -40,3 +40,17 @@ model <- spatialreg::lagsarlm(
 )
 summary(model)
 screenreg(model)
+
+
+y_pred <- predict(model)
+y_obs <- datamapa1$brecha
+sse <- sum((y_pred - y_obs)^2)
+sst <- sum((y_obs - mean(y_obs))^2)
+pseudo_r2 <- 1 - (sse/sst)
+empty_neighbours <- which(card(nb) == 0)
+y_obs_included <- y_obs[-empty_neighbours]
+
+# Luego puedes calcular el pseudo R^2 para las observaciones incluidas.
+sse <- sum((y_pred - y_obs_included)^2)
+sst <- sum((y_obs_included - mean(y_obs_included))^2)
+pseudo_r2 <- 1 - (sse/sst)
