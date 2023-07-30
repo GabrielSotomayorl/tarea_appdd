@@ -359,7 +359,7 @@ df_finalm <- left_join(codigo_comuna,df_final,by="comuna")
 mapa_comunas$codigo_comunan <- as.numeric(mapa_comunas$codigo_comuna) 
 datamapa <- left_join(mapa_comunas, select(df_finalm, c(comuna,cod_comuna, brecha)), by = c("codigo_comunan" = "cod_comuna"))
 
-
+saveRDS(datamapa, "input/data/proc/datamapa.rds")
 # Crear mapa
 map_plot <- ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) + 
   geom_sf(aes(fill = brecha, geometry = geometry))  +
@@ -474,7 +474,6 @@ xlabs<-c("prop_rural_2020", "prop_pueblos_originarios", "promedio_anios_escolari
 plots <- list()
 
 # Bucle for para crear scatterplots
-# Bucle for para crear scatterplots
 for (i in seq_along(variables)) {
   
   # Subset de los datos para excluir NA's
@@ -498,3 +497,4 @@ cor_plot<-gridExtra::grid.arrange(grobs = plots, ncol = 4)
 ggsave(filename="output/graphs/cor.jpeg", plot = cor_plot, device = "jpeg", width = 10000, height =7000 , units = "px",
        dpi=800)
 
+saveRDS(df_final, "input/data/proc/datafinal.rds")
