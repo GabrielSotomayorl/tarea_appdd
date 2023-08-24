@@ -19,7 +19,8 @@ pacman::p_load(tidyverse,
                knitr,
                kableExtra,
                gridExtra,
-               stringr)
+               stringr,
+               broom)
 
 #Descarga de datos de ingreso
 
@@ -498,3 +499,52 @@ ggsave(filename="output/graphs/cor.jpeg", plot = cor_plot, device = "jpeg", widt
        dpi=800)
 
 saveRDS(df_final, "input/data/proc/datafinal.rds")
+
+#coefplot
+
+
+# Extracting the coefficients from the model
+coefs <- tidy(models[[3]])
+
+# Adding the names
+coefs$term <- coefnames
+coefs$term <- factor(coefs$term, levels = rev(coefnames) )
+
+# Plotting the coefficients
+ggplot(coefs[-1,], aes(x=term, y=estimate)) +
+  geom_hline(yintercept=0, linetype="dashed") +
+  geom_errorbar(aes(ymin=estimate - std.error, ymax=estimate + std.error), width=.2) +
+  geom_point() +
+  coord_flip() +
+  labs(title="Coeficiente de variables",
+       x="Variables",
+       y="Estimación") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#mapas por macrozona 
+
+ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201")& 
+                  datamapa$codigo_region %in% c("15","01","02","03","04"),]) + 
+  geom_sf(aes(fill = brecha, geometry = geometry))  +
+  scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0,
+                       name = "brecha", limits = c(min(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
+  theme_minimal(base_size = 13) + xlim(-72,-67)
+
+  # labs(title="Figura 1: Distribución geográfica de la brecha 
+  #     salarial de género comunal", caption= "Fuente: Elaboración propia a partir de registros 
+  #      administrativos del Ministerio de Desarrollo Social.")
+
+ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201")& 
+                  datamapa$codigo_region %in% c("13","05","06","07","08","16"),]) + 
+  geom_sf(aes(fill = brecha, geometry = geometry))  +
+  scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0,
+                       name = "brecha", limits = c(min(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
+  theme_minimal(base_size = 13) + xlim(-74,-69.5) + ylim(-38.5,-31.5)
+
+ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201")& 
+                  datamapa$codigo_region %in% c("09","10","11","12","14"),]) + 
+  geom_sf(aes(fill = brecha, geometry = geometry))  +
+  scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0,
+                       name = "brecha", limits = c(min(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
+  theme_minimal(base_size = 13)
