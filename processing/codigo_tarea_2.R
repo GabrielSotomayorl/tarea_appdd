@@ -213,9 +213,8 @@ censo17$com_str<- case_when(
   TRUE ~ censo17$com_str
 )
 
-# Perdidos de casos de comuna con valores extremos con muy pocos habitantes
-ingresos$brecha[ingresos$comuna %in% c("laguna blanca","lago verde","la higuera")] <- NA
 
+# Perdidos de casos de comuna con valores extremos con muy pocos habitantes
 df_final <- ingresos %>%
   dplyr::left_join(educacion, by = "comuna") %>%
   dplyr::left_join(ocupacion, by = "comuna") %>% 
@@ -234,9 +233,30 @@ df_final <-  df_final %>%
          provincia = as.numeric(ifelse(comuna.y < 10000, substr(comuna.y, 1, 2), substr(comuna.y, 1, 3))),
          prop_ocup = as.numeric(prop_ocup),
          tasa_matricula_parvularia_neta = as.numeric(tasa_matricula_parvularia_neta)) %>% 
-  filter(comuna != "antartica"& !is.na(brecha))
+  filter(comuna != "antartica"
+         #& !is.na(brecha)
+         )
 
+#Revisión perdidos 
+df_final %>% 
+  group_by(is.na(brecha)) %>% 
+  summarize(n = n(),
+            poblacion = mean(Total_Poblacion_2021),
+            "Porcentaje de niños" = mean(propnna),
+            Escolaridad = mean(promedio_anios_escolaridad25_2017),
+            Rural = mean(prop_rural_2020),
+            Originarios = mean(prop_poblacion_pueblos_originarios_ley_chile_2017)) %>% 
+  round(1) %>% 
+  kable(format = "html", booktabs = TRUE, 
+        col.names = c("Perdidos","Freq" ,"Población","Porcentaje de NNA","Años de Escolaridad", "Porcentae Rural", "PPOO")) %>%
+  kable_styling(full_width = FALSE, latex_options = "striped", font_size = 12) %>%
+  save_kable(file = "output/tables/perdidos.html")
+  
 
+#Borrar perdidos
+df_final <-  df_final %>% 
+  filter(!is.na(brecha))
+  
 # ** imputación de datos faltantes (provincia - región) -------------------
 
 
@@ -251,7 +271,7 @@ reemplaza_mean <- function(x){
   return(x)
 }
 
-summary(df_final)
+
 ###--- Imputación por provincia ---###
 
 df_final <- df_final %>% group_by(provincia) %>% 
@@ -262,7 +282,7 @@ df_final <- df_final %>% group_by(provincia) %>%
 df_final <- df_final %>% group_by(region) %>% 
   mutate_all(reemplaza_mean) %>% ungroup() %>% 
   janitor::clean_names()
-
+summary(df_final)
 
 library(corrplot)
 
@@ -295,8 +315,26 @@ corrplot(corre,
          tl.col = "black",
          tl.srt = 45,
          tl.cex = 0.6)
-#Regresión lineal múltiple-----------------------------
 
+#casos influyentes 
+lm1<-lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+          promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup + 
+          e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
+          o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop +
+          d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
+          b_explotacion_de_minas_y_canteras_prop + 
+          g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
+          i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
+          l_actividades_inmobiliarias_prop +
+          c_industria_manufacturera_prop + 
+          j_informacion_y_comunicaciones_prop ,data=df_final) 
+
+cooksd <- cooks.distance(lm1)
+as.numeric(names(cooksd)[cooksd > 1])
+
+df_final$brecha[as.numeric(names(cooksd)[cooksd > 1])]<-NA
+
+#Regresión lineal múltiple-----------------------------
 models <- list(
   lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
        promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup ,data=df_final),
@@ -348,17 +386,96 @@ reg<-htmlreg(models,custom.coef.names = coefnames, single.row = T)
 write_lines(reg,"output/tables/regresion.html")
 browseURL("output/tables/regresion.html")
 
+
+#Revisión efectos fijos 
+table(df_final$region)
+
+df_final$macrozona <- factor(case_when(
+  df_final$region %in% c(1, 2, 15) ~ "Norte Grande",
+  df_final$region %in% c(3, 4) ~ "Norte Chico",
+  df_final$region %in% c(5, 6, 7, 8, 13, 16) ~ "Zona Central", 
+  df_final$region %in% c(9, 14, 10) ~ "Zona Sur",
+  df_final$region %in% c(11, 12, 15) ~ "Zona Austral"
+),levels = c("Norte Grande","Norte Chico","Zona Central", "Zona Sur", "Zona Austral"))
+
+
+table(df_final$macrozona,df_final$region)
+
+models1 <- list(
+  lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+       promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup + 
+       e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
+       o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop +
+       d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
+       b_explotacion_de_minas_y_canteras_prop + 
+       g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
+       i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
+       l_actividades_inmobiliarias_prop +
+       c_industria_manufacturera_prop + 
+       j_informacion_y_comunicaciones_prop ,data=df_final) ,
+  lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+       promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup + 
+       e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
+       o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop +
+       d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
+       b_explotacion_de_minas_y_canteras_prop + 
+       g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
+       i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
+       l_actividades_inmobiliarias_prop +
+       c_industria_manufacturera_prop + 
+       j_informacion_y_comunicaciones_prop+macrozona ,data=df_final) 
+  
+)
+
+# lmi<-lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
+#           promedio_anios_escolaridad25_2017 + propnna  + tasa_matricula_parvularia_neta+ prop_ocup + 
+#           e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop + 
+#           o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop +
+#           d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop + 
+#           b_explotacion_de_minas_y_canteras_prop + 
+#           g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop + 
+#           i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop + 
+#           l_actividades_inmobiliarias_prop +
+#           c_industria_manufacturera_prop + 
+#           j_informacion_y_comunicaciones_prop+macrozona+prop_rural_2020* macrozona + prop_poblacion_pueblos_originarios_ley_chile_2017 * macrozona+ 
+#           promedio_anios_escolaridad25_2017* macrozona + propnna * macrozona + tasa_matricula_parvularia_neta* macrozona+ prop_ocup* macrozona + 
+#           e_suministro_de_agua_evacuacion_de_aguas_residuales_gestion_de_desechos_y_descontaminacion_prop * macrozona+ 
+#           o_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria_prop* macrozona +
+#           d_suministro_de_electricidad_gas_vapor_y_aire_acondicionado_prop * macrozona+ 
+#           b_explotacion_de_minas_y_canteras_prop * macrozona+ 
+#           g_comercio_al_por_mayor_y_al_por_menor_reparacion_de_vehiculos_automotores_y_motocicletas_prop* macrozona + 
+#           i_actividades_de_alojamiento_y_de_servicio_de_comidas_prop* macrozona + 
+#           l_actividades_inmobiliarias_prop* macrozona +
+#           c_industria_manufacturera_prop* macrozona + 
+#           j_informacion_y_comunicaciones_prop* macrozona ,data=df_final)
+# library(MASS)
+# lmi<-stepAIC(lmi)
+# screenreg(lmi)
+
+screenreg(models1,
+          custom.coef.names = c(coefnames,"Norte Chico","Zona Central", "Zona Sur", "Zona Austral"),
+          single.row = T)
+
+car::vif(models1[[1]])
+car::vif(models1[[2]])
+
+reg<-htmlreg(models1,
+             custom.coef.names = c(coefnames,"Norte Chico","Zona Central", "Zona Sur", "Zona Austral"),
+             single.row = T)
+
+write_lines(reg,"output/tables/regresion2.html")
+browseURL("output/tables/regresion2.html")
 # mapa ----------------
 
 
 # Integrar código de comuna para merge con base de datos de información geográfica 
 codigo_comuna <- read_excel("input/data/original/codigo_comuna.xlsx") %>%
   mutate(comuna= tolower(iconv(comuna,to = "ASCII//TRANSLIT" )))
-df_finalm <- left_join(codigo_comuna,df_final,by="comuna")
-
+df_finalm <- left_join(codigo_comuna,df_final,by="comuna") %>% filter(!is.na(brecha))
+df_finalm$res <- models[[3]]$residuals
 # Unir datos de brecha con información geográfica del paquete chile_mapas
 mapa_comunas$codigo_comunan <- as.numeric(mapa_comunas$codigo_comuna) 
-datamapa <- left_join(mapa_comunas, select(df_finalm, c(comuna,cod_comuna, brecha)), by = c("codigo_comunan" = "cod_comuna"))
+datamapa <- left_join(mapa_comunas, select(df_finalm, comuna,cod_comuna, brecha,res), by = c("codigo_comunan" = "cod_comuna"))
 
 saveRDS(datamapa, "input/data/proc/datamapa.rds")
 # Crear mapa
@@ -374,6 +491,13 @@ map_plot <- ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) +
 ggsave(filename="output/graphs/mapa.jpeg", plot = map_plot, device = "jpeg", width = 3800, height = 7000, units = "px",
        dpi=800)
 
+#mapa residuos
+ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201"),]) + 
+  geom_sf(aes(fill = res, geometry = geometry))  +
+  scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0, name = "residuos") +
+  theme_minimal(base_size = 13)+
+  labs(title="Figura 1: Distribución geográfica de los residuos", caption= "Fuente: Elaboración propia a partir de registros 
+       administrativos del Ministerio de Desarrollo Social.")
 
 # Tabla de descriptivos-------------
 
@@ -506,17 +630,20 @@ saveRDS(df_final, "input/data/proc/datafinal.rds")
 # Extracting the coefficients from the model
 coefs <- tidy(models[[3]])
 
+coefnames[10] <- "Prop. Suministro de electricidad y gas"
 # Adding the names
 coefs$term <- coefnames
-coefs$term <- factor(coefs$term, levels = rev(coefnames) )
+coefs$term <- factor(coefs$term, levels = rev(coefnames),
+                     labels = paste(rev(coefnames),round(rev(coefs$estimate),2)))
 
 # Plotting the coefficients
 ggplot(coefs[-1,], aes(x=term, y=estimate)) +
   geom_hline(yintercept=0, linetype="dashed") +
-  geom_errorbar(aes(ymin=estimate - std.error, ymax=estimate + std.error), width=.2) +
-  geom_point() +
+  geom_errorbar(aes(ymin=estimate - std.error, ymax=estimate + std.error), width=.2,
+                color = "#440154") +
+  geom_point(color = "#440154") +
   coord_flip() +
-  labs(title="Coeficiente de variables",
+  labs(title="Coeficientes de regresión sobre la brecha de género comunal",
        x="Variables",
        y="Estimación") +
   theme_minimal() +
@@ -528,8 +655,10 @@ ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201")&
                   datamapa$codigo_region %in% c("15","01","02","03","04"),]) + 
   geom_sf(aes(fill = brecha, geometry = geometry))  +
   scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0,
-                       name = "brecha", limits = c(min(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
-  theme_minimal(base_size = 13) + xlim(-72,-67)
+                       name = "brecha", limits = c(-max(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
+  theme_minimal(base_size = 13) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +xlim(-72,-67) 
 
   # labs(title="Figura 1: Distribución geográfica de la brecha 
   #     salarial de género comunal", caption= "Fuente: Elaboración propia a partir de registros 
@@ -539,12 +668,16 @@ ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201")&
                   datamapa$codigo_region %in% c("13","05","06","07","08","16"),]) + 
   geom_sf(aes(fill = brecha, geometry = geometry))  +
   scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0,
-                       name = "brecha", limits = c(min(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
-  theme_minimal(base_size = 13) + xlim(-74,-69.5) + ylim(-38.5,-31.5)
+                       name = "brecha", limits = c(-max(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
+  theme_minimal(base_size = 13) + xlim(-74,-69.5) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())  + ylim(-38.5,-31.5)
 
 ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201")& 
                   datamapa$codigo_region %in% c("09","10","11","12","14"),]) + 
   geom_sf(aes(fill = brecha, geometry = geometry))  +
   scale_fill_gradient2(low = "#fde725", mid = "#35b779", high = "#440154", midpoint = 0,
-                       name = "brecha", limits = c(min(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
-  theme_minimal(base_size = 13)
+                       name = "brecha", limits = c(-max(datamapa$brecha,na.rm = T), max(datamapa$brecha,na.rm = T))) +
+theme_minimal(base_size = 13) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) 
