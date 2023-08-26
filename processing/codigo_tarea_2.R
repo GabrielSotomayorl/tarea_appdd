@@ -334,6 +334,7 @@ as.numeric(names(cooksd)[cooksd > 1])
 
 df_final$brecha[as.numeric(names(cooksd)[cooksd > 1])]<-NA
 
+view(dfSummary(df_final$brecha, headings = FALSE,method ="browser"))
 #Regresión lineal múltiple-----------------------------
 models <- list(
   lm(brecha ~ prop_rural_2020 + prop_poblacion_pueblos_originarios_ley_chile_2017 + 
@@ -364,18 +365,17 @@ models <- list(
 
 
 
-
-coefnames<-c("Intercepto","Proporción Rural", "Proporción pueblos orginarios", "Promedio años de escolaridad",
-             "Porcentaje de NNA","Tasa de matricula parvularia","Proporción de ocupados",
-             "Prop. Suministro de agua",
-             "Prop. Administración publica y defensa",
-             "Prop. Suministro de electricidad, gas, vapor y aire acondicionado",
-             "Prop. Minas y Canteras",
-             "Prop. Comercio, reparación autos",
-             "Prop. Alojamiento y comidas",
-             "Prop. Actividades inmobiliarias",
-             "Prop Manofactura",
-             "Prop. información y comunicaciones"
+coefnames<-c("Intercepto","Porcentaje Rural", "Porcentaje pueblos orginarios", "Promedio años de escolaridad",
+             "Porcentaje de NNA","Tasa de matricula parvularia","Porcentaje de ocupados",
+             "Porc. Suministro de agua",
+             "Porc. Administración publica y defensa",
+             "Porc. Suministro de electricidad, gas, vapor y aire acondicionado",
+             "Porc. Minas y Canteras",
+             "Porc. Comercio, reparación autos",
+             "Porc. Alojamiento y comidas",
+             "Porc. Actividades inmobiliarias",
+             "Porc Manofactura",
+             "Porc. información y comunicaciones"
              
             )
 
@@ -554,21 +554,21 @@ df_summary <- data.frame(
 )
 
 df_summary$Variable <- c("Brecha salarial",
-                         "Proporción Rural 2020",
-                         "Proporción de pueblos originarios Ley Chile 2017",
+                         "Porcentaje Rural 2020",
+                         "Porcentaje de pueblos originarios Ley Chile 2017",
                          "Promedio de años de escolaridad 2017",
-                         "Proporción de NNA",
+                         "Porcentaje de NNA",
                          "Tasa de matrícula parvularia neta",
-                         "Proporción de ocupados/as formales sobre la población comunal",
-                         "Proporción de comercio al por mayor y menor, reparación de vehículos automotores y motocicletas",
-                         "Proporción de actividades de alojamiento y de servicio de comidas",
-                         "Proporción de información y comunicaciones",
-                         "Proporción de suministro de electricidad, gas, vapor y aire acondicionado",
-                         "Proporción de industria manufacturera",
-                         "Proporción de explotación de minas y canteras",
-                         "Proporción de suministro de agua, evacuación de aguas residuales, gestión de desechos y descontaminación",
-                         "Proporción de administración pública y defensa, planes de seguridad social de afiliación obligatoria",
-                         "Proporción de actividades inmobiliarias")
+                         "Porcentaje de ocupados/as formales sobre la población comunal",
+                         "Porcentaje de comercio al por mayor y menor, reparación de vehículos automotores y motocicletas",
+                         "Porcentaje de actividades de alojamiento y de servicio de comidas",
+                         "Porcentaje de información y comunicaciones",
+                         "Porcentaje de suministro de electricidad, gas, vapor y aire acondicionado",
+                         "Porcentaje de industria manufacturera",
+                         "Porcentaje de explotación de minas y canteras",
+                         "Porcentaje de suministro de agua, evacuación de aguas residuales, gestión de desechos y descontaminación",
+                         "Porcentaje de administración pública y defensa, planes de seguridad social de afiliación obligatoria",
+                         "Porcentaje de actividades inmobiliarias")
 
 # Utilizar el paquete kable de knitr para convertir el dataframe en una tabla HTML
 tab_desc<-kable(df_summary, format = "html", row.names = FALSE, digits = 2) %>%
@@ -681,3 +681,4 @@ ggplot(datamapa[!datamapa$codigo_comuna %in% c("05104","05201")&
 theme_minimal(base_size = 13) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) 
+
